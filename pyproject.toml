@@ -45,12 +45,6 @@ classifiers = [
 ]
 keywords = ["PDF", "OCR", "optical character recognition", "PDF/A", "scanning"]
 
-[project.urls]
-Documentation = "https://ocrmypdf.readthedocs.io/"
-Source = "https://github.com/ocrmypdf/OCRmyPDF"
-Tracker = "https://github.com/ocrmypdf/OCRmyPDF/issues"
-Changelog = "https://github.com/ocrmypdf/OCRmyPDF/tree/main/docs/releasenotes"
-
 [project.optional-dependencies]
 # User-installable features - use `uv sync --extra <name>` or `pip install ocrmypdf[name]`
 watcher = ["watchdog>=1.0.2", "cyclopts>=3", "python-dotenv"]

@@ -1,6 +1,8 @@
 # Vendored Windows OCR runtime assets
 
 Place offline Windows OCR assets here so the build machine does not need network access.
+This directory is intentionally manual-only: the repository does not ship any
+helper script that downloads these files from the internet.
 
 Expected files:
 

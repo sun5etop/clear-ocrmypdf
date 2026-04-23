@@ -6,7 +6,12 @@ There are now two Tesseract integration paths:
 - `tesserocr` / `libtesseract` in-process OCR (`--ocr-engine tesserocr`)
 - External Tesseract CLI fallback (`--ocr-engine tesseract`)
 
-## Runtime layout
+## Offline-only runtime layout
+
+This packaging flow is intentionally offline-only. The repository does not
+provide any script that downloads OCR assets or build dependencies from the
+network. All runtime files must be prepared manually and copied into the
+repository before building.
 
 For an offline Windows build, vendor the wheel and language data into the repo:
 
@@ -75,11 +80,8 @@ Tesseract CLI backend.
 
 ## Build commands
 
-Install desktop build tooling:
-
-```bash
-uv sync --group desktop
-```
+Install desktop build tooling into `.venv` using your own offline wheelhouse or
+internal package mirror. This repository does not automate dependency download.
 
 Build the GUI app directly with PyInstaller:
 
@@ -118,10 +120,13 @@ Bundling Ghostscript also enables `pdfa*` output modes without a system install.
 Other tools such as `unpaper`, `pngquant`, and `jbig2enc` remain optional unless
 you rely on the features that need them.
 
-## Vendored sources
+## Vendored assets
 
-As of April 23, 2026, the repository expects these upstream sources when you
-prepare offline Windows assets:
+The build expects these files to already exist inside the repository:
 
-- `tesserocr` Windows wheels: `simonflueckiger/tesserocr-windows_build` GitHub releases
-- `traineddata` files: official `tesseract-ocr/tessdata` repository
+- `packaging/vendor/windows/tesserocr-*.whl`
+- `packaging/vendor/windows/tessdata/*.traineddata`
+- optionally `packaging/runtime/windows/gs/bin/gswin64c.exe`
+
+How you obtain those files is outside the scope of this repository. Keep that
+step separate from the build machine if you must guarantee no network access.
