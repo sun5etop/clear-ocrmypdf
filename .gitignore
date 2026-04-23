@@ -3,6 +3,8 @@
 
 # dotfiles
 .coverage
+.DS_Store
+._*
 .venv*/
 .tox/
 .vscode/

@@ -297,13 +297,14 @@ class OcrGrafter:
             # We store autorotate_correction and emplaced_page to set the final
             # page /Rotate tag after grafting.
             if ocr_tree:
+                effective_dpi = ocr_tree.dpi or self.pdfinfo[pageno].dpi.to_scalar()
                 self.fpdf2_parsed_pages.append(
                     Fpdf2ParsedPage(
                         ocr_tree=ocr_tree,
                         pageno=pageno,
                         autorotate_correction=autorotate_correction,
                         emplaced_page=emplaced_page,
-                        dpi=self.pdfinfo[pageno].dpi.to_scalar(),
+                        dpi=effective_dpi,
                     )
                 )
             if ocr_output:

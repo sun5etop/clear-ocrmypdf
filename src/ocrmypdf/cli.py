@@ -411,10 +411,12 @@ Online documentation is located at:
     )
     advanced.add_argument(
         '--ocr-engine',
-        choices=['auto', 'tesseract', 'none'],
+        choices=['auto', 'tesseract', 'tesserocr', 'none'],
         default='auto',
         help="OCR engine to use. 'auto' (default) selects the best available engine. "
-        "'tesseract' uses Tesseract OCR. "
+        "'tesseract' prefers the in-process libtesseract backend and falls back to "
+        "the external Tesseract executable. "
+        "'tesserocr' forces the in-process libtesseract backend. "
         "'none' skips OCR entirely, useful for PDF/A conversion or image processing "
         "without text recognition.",
     )

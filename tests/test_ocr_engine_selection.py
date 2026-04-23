@@ -54,6 +54,15 @@ class TestOcrEngineCliOption:
         args = parser.parse_args(['--ocr-engine', 'none', 'in.pdf', 'out.pdf'])
         assert args.ocr_engine == 'none'
 
+    def test_ocr_engine_accepts_tesserocr(self):
+        """--ocr-engine should accept 'tesserocr'."""
+        from ocrmypdf.cli import get_parser
+
+        parser = get_parser()
+
+        args = parser.parse_args(['--ocr-engine', 'tesserocr', 'in.pdf', 'out.pdf'])
+        assert args.ocr_engine == 'tesserocr'
+
     def test_ocr_engine_default_is_auto(self):
         """--ocr-engine should default to 'auto'."""
         from ocrmypdf.cli import get_parser
@@ -137,3 +146,65 @@ class TestOcrEnginePluginSelection:
 
         engine = null_ocr.get_ocr_engine(options=options)
         assert engine is None
+
+    def test_libtesseract_selected_when_available(self, monkeypatch):
+        """libtesseract backend should be selected when available."""
+        from unittest.mock import MagicMock
+
+        from ocrmypdf.builtin_plugins import libtesseract_ocr
+        from ocrmypdf.builtin_plugins.libtesseract_ocr import LibtesseractOcrEngine
+
+        options = MagicMock()
+        options.ocr_engine = 'auto'
+        options.pdf_renderer = 'auto'
+
+        monkeypatch.setattr(libtesseract_ocr.tesserocr, 'available', lambda: True)
+
+        engine = libtesseract_ocr.get_ocr_engine(options=options)
+        assert isinstance(engine, LibtesseractOcrEngine)
+
+    def test_libtesseract_rejected_for_sandwich(self, monkeypatch):
+        """libtesseract backend should not claim sandwich rendering."""
+        from unittest.mock import MagicMock
+
+        from ocrmypdf.builtin_plugins import libtesseract_ocr
+
+        options = MagicMock()
+        options.ocr_engine = 'auto'
+        options.pdf_renderer = 'sandwich'
+
+        monkeypatch.setattr(libtesseract_ocr.tesserocr, 'available', lambda: True)
+
+        engine = libtesseract_ocr.get_ocr_engine(options=options)
+        assert engine is None
+
+    def test_external_tesseract_dependency_check_skipped_when_libtesseract_available(
+        self, monkeypatch
+    ):
+        """External tesseract should not be required if libtesseract can handle the job."""
+        from unittest.mock import MagicMock
+
+        from ocrmypdf.builtin_plugins import tesseract_ocr
+
+        options = MagicMock()
+        options.ocr_engine = 'auto'
+        options.pdf_renderer = 'auto'
+
+        called = {'check_external': False}
+
+        def fake_check_external_program(**kwargs):
+            called['check_external'] = True
+            return None
+
+        monkeypatch.setattr(
+            'ocrmypdf.builtin_plugins.tesseract_ocr.check_external_program',
+            fake_check_external_program,
+        )
+        monkeypatch.setattr(
+            'ocrmypdf._exec.tesserocr.available',
+            lambda: True,
+        )
+
+        tesseract_ocr.check_options(options)
+
+        assert called['check_external'] is False

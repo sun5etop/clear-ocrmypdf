@@ -16,6 +16,7 @@ from ocrmypdf import hookimpl
 from ocrmypdf._exec import tesseract
 from ocrmypdf._exec.tesseract import ThresholdingMethod
 from ocrmypdf._jobcontext import PageContext
+from ocrmypdf.builtin_plugins.libtesseract_ocr import can_handle_options
 from ocrmypdf.cli import numeric
 from ocrmypdf.exceptions import BadArgsError, MissingDependencyError
 from ocrmypdf.helpers import available_cpu_count, clamp
@@ -306,6 +307,15 @@ def add_options(parser):
 @hookimpl
 def check_options(options):
     """Check external dependencies and version compatibility for Tesseract."""
+    selected_engine = getattr(options, 'ocr_engine', 'auto')
+    if selected_engine == 'tesserocr':
+        return
+    if selected_engine in ('auto', 'tesseract'):
+        from ocrmypdf._exec import tesserocr
+
+        if tesserocr.available() and can_handle_options(options):
+            return
+
     check_external_program(
         program='tesseract',
         package={'linux': 'tesseract-ocr'},

@@ -265,6 +265,15 @@ class OcrOptions(BaseModel):
             raise ValueError(f"rasterizer must be one of {valid_rasterizers}")
         return v
 
+    @field_validator('ocr_engine')
+    @classmethod
+    def validate_ocr_engine(cls, v):
+        """Validate OCR engine selection."""
+        valid_engines = {'auto', 'tesseract', 'tesserocr', 'none'}
+        if v not in valid_engines:
+            raise ValueError(f"ocr_engine must be one of {valid_engines}")
+        return v
+
     @field_validator('clean_final')
     @classmethod
     def validate_clean_final(cls, v, info):

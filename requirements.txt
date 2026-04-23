@@ -1,0 +1,20 @@
+# Local development/runtime environment for OCRmyPDF on macOS
+-e .
+
+# OCR engine integration
+tesserocr>=2.10.0
+
+# Testing
+coverage[toml]>=6.2
+hypothesis>=6.36.0
+pytest>=6.2.5
+pytest-cov>=3.0.0
+pytest-xdist>=2.5.0
+pymupdf>=1.24.14
+reportlab>=3.6.8
+types-Pillow
+types-humanfriendly
+
+# Development and packaging
+mypy>=1.13.0
+pyinstaller>=6.15.0

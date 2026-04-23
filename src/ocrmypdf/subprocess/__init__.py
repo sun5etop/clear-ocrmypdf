@@ -16,6 +16,7 @@ from subprocess import run as subprocess_run
 
 from packaging.version import Version
 
+from ocrmypdf._runtime import prepare_process_env, resolve_program_path
 from ocrmypdf.exceptions import MissingDependencyError
 
 # pylint: disable=logging-format-interpolation
@@ -122,7 +123,12 @@ def _fix_process_args(
         env = os.environ
 
     # Search in spoof path if necessary
+    args = list(args)
     program = str(args[0])
+    resolved_program = resolve_program_path(program, env)
+    if resolved_program is not None:
+        args[0] = str(resolved_program)
+        env = prepare_process_env(program, resolved_program, env)
 
     if sys.platform == 'win32':
         # pylint: disable=import-outside-toplevel

@@ -58,6 +58,7 @@ webservice = ["streamlit>=1.41.0"]
 
 [project.scripts]
 ocrmypdf = "ocrmypdf.__main__:run"
+ocrmypdf-gui = "ocrmypdf.gui:main"
 
 [tool.distutils.bdist_wheel]
 python-tag = "py311"
@@ -179,6 +180,9 @@ test = [
   # Extended test capabilities (merged from extended_test)
   "pymupdf>=1.24.14",
 ]
+embedded_ocr = [
+  "tesserocr>=2.10.0",
+]
 docs = [
   "myst-parser>=4.0.1",
   "sphinx",
@@ -188,3 +192,4 @@ docs = [
   "sphinxcontrib-mermaid",
 ]
 streamlit-dev = ["streamlit>=1.40.2", "streamlit-pdf-viewer>=0.0.19"]
+desktop = ["pyinstaller>=6.15.0"]
