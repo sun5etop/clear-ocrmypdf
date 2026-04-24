@@ -62,11 +62,13 @@ class OcrmypdfGui(Tk):
         self.output_type = StringVar(value='pdf')
         self.mode = StringVar(value='skip')
         self.status = StringVar(value='就绪')
+        self.runtime_hint = StringVar(value=get_gui_runtime_hint())
 
         self.rotate_pages = BooleanVar(value=True)
         self.deskew = BooleanVar(value=False)
 
         self._build()
+        self._configure_runtime_options()
         self.after(100, self._drain_logs)
 
     def _build(self) -> None:
@@ -98,13 +100,14 @@ class OcrmypdfGui(Tk):
         )
 
         ttk.Label(options, text="输出类型").grid(row=0, column=1, sticky='w')
-        ttk.Combobox(
+        self.output_type_combo = ttk.Combobox(
             options,
             textvariable=self.output_type,
             values=('pdf', 'pdfa'),
             state='readonly',
             width=12,
-        ).grid(row=1, column=1, sticky='w', padx=(0, 12))
+        )
+        self.output_type_combo.grid(row=1, column=1, sticky='w', padx=(0, 12))
 
         ttk.Label(options, text="处理模式").grid(row=0, column=2, sticky='w')
         ttk.Combobox(
@@ -123,7 +126,7 @@ class OcrmypdfGui(Tk):
         )
         ttk.Label(
             options,
-            text="提示：选择“pdf”可避免依赖 Ghostscript，更适合独立桌面版打包。",
+            textvariable=self.runtime_hint,
             wraplength=560,
         ).grid(row=3, column=0, columnspan=3, sticky='w', pady=(12, 0))
 
@@ -232,6 +235,11 @@ class OcrmypdfGui(Tk):
         logger.propagate = False
 
         try:
+            ocr_kwargs = get_gui_ocr_kwargs(
+                output_type=self.output_type.get(),
+                frozen=getattr(sys, 'frozen', False),
+                platform=sys.platform,
+            )
             exit_code = ocrmypdf.ocr(
                 input_path,
                 output_path,
@@ -248,6 +256,7 @@ class OcrmypdfGui(Tk):
                 optimize=0,
                 progress_bar=False,
                 use_threads=True,
+                **ocr_kwargs,
             )
             if exit_code == ExitCode.ok:
                 self.log_queue.put(f"处理完成：{output_path}")
@@ -264,11 +273,77 @@ class OcrmypdfGui(Tk):
             logger.propagate = old_propagate
             self.after(0, lambda: self._set_busy(False))
 
+    def _configure_runtime_options(self) -> None:
+        if not running_frozen_windows_bundle(
+            frozen=getattr(sys, 'frozen', False), platform=sys.platform
+        ):
+            return
+        if not has_bundled_ghostscript():
+            self.output_type_combo.configure(values=('pdf',))
+            if self.output_type.get() != 'pdf':
+                self.output_type.set('pdf')
+
 
 def main() -> None:
     _configure_tk_runtime()
     app = OcrmypdfGui()
     app.mainloop()
+
+
+def running_frozen_windows_bundle(*, frozen: bool, platform: str) -> bool:
+    """Return True when the GUI is running from a packaged Windows app."""
+    return frozen and platform == 'win32'
+
+
+def get_gui_ocr_kwargs(
+    *, output_type: str, frozen: bool, platform: str
+) -> dict[str, str]:
+    """Return OCR settings that are safe for the desktop GUI runtime."""
+    del output_type
+    kwargs: dict[str, str] = {}
+    if running_frozen_windows_bundle(frozen=frozen, platform=platform):
+        # The Windows bundle ships libtesseract/tesserocr, but not tesseract.exe.
+        kwargs['ocr_engine'] = 'tesserocr'
+        kwargs['pdf_renderer'] = 'auto'
+    return kwargs
+
+
+def has_bundled_ghostscript() -> bool:
+    """Return True when the packaged Windows app can find gswin64c.exe."""
+    for env_var in ('OCRMYPDF_GS', 'OCRMYPDF_GHOSTSCRIPT'):
+        configured = os.environ.get(env_var)
+        if configured and Path(configured).is_file():
+            return True
+
+    bundle_roots: list[Path] = []
+    meipass = getattr(sys, '_MEIPASS', None)
+    if meipass:
+        bundle_roots.append(Path(meipass))
+    bundle_roots.append(Path(sys.executable).resolve().parent)
+
+    for root in bundle_roots:
+        for relative in (
+            Path('ocrmypdf_runtime/gs/bin/gswin64c.exe'),
+            Path('runtime/gs/bin/gswin64c.exe'),
+            Path('gs/bin/gswin64c.exe'),
+        ):
+            if (root / relative).is_file():
+                return True
+    return False
+
+
+def get_gui_runtime_hint(*, frozen: bool | None = None, platform: str | None = None) -> str:
+    """Return the hint text shown in the desktop GUI."""
+    if frozen is None:
+        frozen = getattr(sys, 'frozen', False)
+    if platform is None:
+        platform = sys.platform
+
+    if not running_frozen_windows_bundle(frozen=frozen, platform=platform):
+        return "提示：桌面打包版默认使用内置 libtesseract，并避免调用外部 tesseract.exe。"
+    if has_bundled_ghostscript():
+        return "提示：当前打包版使用内置 libtesseract；已检测到 Ghostscript，可输出 PDF/A。"
+    return "提示：当前打包版使用内置 libtesseract；未检测到 Ghostscript，已禁用 PDF/A。"
 
 
 def _configure_tk_runtime() -> None:
